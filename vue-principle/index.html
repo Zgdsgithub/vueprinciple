@@ -1,0 +1,117 @@
+<!--
+ * @Author: zhanggd
+ * @Date: 2022-10-12 10:10:05
+ * @LastEditors: zhanggd
+ * @LastEditTime: 2022-10-18 13:58:43
+ * @Description: vuejs设计与实现 代码
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="favicon.gif" type="image/gif" />
+    <title>vuejs设计与实现</title>
+    <style type="text/css"></style>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <script type="text/javascript" src="/index.ts"></script>
+    <script>
+      // 响应式数据实现
+      const bucket = new WeakMap(); // 防止内存泄漏
+      let activeEffect; // 通过它将不同影响函数加入bucket
+      const effectStack = [];
+      const data = { text: 1 };
+      const obj = new Proxy(data, {
+        get(target, key) {
+          track(target, key);
+          return target[key];
+        },
+        set(target, key, newVal) {
+          console.log("获取到新值", newVal);
+          target[key] = newVal;
+          trigger(target, key);
+          // return true;
+        },
+      });
+      function track(target, key) {
+        if (!activeEffect) return target[key];
+        // map
+        let depsMap = bucket.get(target);
+        if (!depsMap) {
+          bucket.set(target, (depsMap = new Map()));
+        }
+        // set
+        let deps = depsMap.get(key);
+        if (!deps) {
+          depsMap.set(key, (deps = new Set()));
+        }
+        deps.add(activeEffect); // 放到set里面
+        activeEffect.deps.push(deps);
+        console.log(target, key, "获取到obj.text");
+      }
+      function trigger(target, key) {
+        const depsMap = bucket.get(target);
+        if (!depsMap) return;
+        const effects = depsMap.get(key);
+        const effectsToRun = new Set();
+        effects &&
+          effects.forEach((fn) => {
+            if (fn !== activeEffect) {
+              effectsToRun.add(fn);
+            }
+          });
+
+        effectsToRun.forEach((fn) => {
+          if (fn.options.scheduler) {
+            fn.options.scheduler(fn);
+          } else {
+            fn();
+          }
+        });
+      }
+      /**
+       * @desc: 注册影响函数
+       * @return: {*}
+       * @param {*} fn 影响函数
+       */
+      function effect(fn, options = {}) {
+        const effectFn = () => {
+          cleanup(effectFn);
+          activeEffect = effectFn;
+          effectStack.push(effectFn); // 压入栈
+          fn();
+          effectStack.pop(); // fn执行完后弹出
+          activeEffect = effectStack[effectStack.length - 1]; // 使当前激活函数指向栈顶
+        };
+        effectFn.options = options;
+        effectFn.deps = [];
+        effectFn();
+      }
+      function cleanup(effectFn) {
+        for (let i = 0; i < effectFn.deps.length; i++) {
+          const deps = effectFn.deps[i];
+          deps.delete(effectFn);
+        }
+        effectFn.deps.length = 0;
+      }
+      effect(
+        () => {
+          // document.body.innerText = obj.text;
+          console.log(obj.text);
+        },
+        {
+          scheduler(fn) {
+            setTimeout(fn);
+          },
+        }
+      );
+      obj.text++;
+      console.log("结束了");
+      // setTimeout(() => {
+      //   obj.text = "22222";
+      // }, 1000);
+    </script>
+  </body>
+</html>
