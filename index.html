@@ -2,7 +2,7 @@
  * @Author: zhanggd
  * @Date: 2022-10-12 10:10:05
  * @LastEditors: zhanggd
- * @LastEditTime: 2022-10-24 17:43:55
+ * @LastEditTime: 2022-10-28 15:44:26
  * @Description: vuejs设计与实现 代码
 -->
 <!DOCTYPE html>
@@ -20,51 +20,65 @@
     <script type="text/javascript" src="/effect.js"></script>
     <script type="text/javascript" src="/quene.js"></script>
     <script type="text/javascript" src="/computed.js"></script>
+    <script type="text/javascript" src="/watch.js"></script>
     <script>
       // 响应式数据实现
       const bucket = new WeakMap(); // 防止内存泄漏
       let activeEffect; // 通过它将不同影响函数加入bucket
       const effectStack = [];
-      const data = { text: 1, text2: 2 };
-      const obj = new Proxy(data, {
-        get(target, key) {
-          track(target, key);
-          return target[key];
+      const ITERATE_KEY = Symbol();
+      const data = {
+        text: { foo: 5 },
+        text2: 2,
+        get bar() {
+          return this.text;
         },
-        set(target, key, newVal) {
-          console.log("获取到新值", newVal);
-          target[key] = newVal;
-          trigger(target, key);
-          // return true;
-        },
-      });
-      const sum = computed(() => obj.text + obj.text2);
+      };
+      const arr = {};
+      const obj = reactive([arr]);
+      // const obj = readonly(data);
+      // const sum = computed(() => obj.text + obj.text2);
 
       // 拿到副作用函数
       const effectFn = effect(
-        () =>
-          // {
+        () => {
           // document.body.innerText = obj.text;
-          // console.log(obj.text);
-          // },
-          obj.text + obj.text2,
+          // console.log(obj.text.foo);
+          // for (const key of obj) {
+          //   console.log(key);
+          // }
+          // console.log(obj[0]);
+        },
+        // obj.text + obj.text2,
+        // obj.text++,
+
         {
           scheduler(fn) {
-            jobQuene.add(fn);
-            flushJob();
-            dirty = true;
+            // jobQuene.add(fn);
+            // flushJob();
+            // dirty = true;
           },
-          lazy: true,
+          // lazy: true,
         }
       );
-
+      // obj[1] = "123";
+      console.log(obj.includes(arr));
+      obj.length = 0;
+      // effectFn();
       // console.log(effectFn()); // 手动执行
-      obj.text++;
+      watch(
+        () => obj.text,
+        (newValue, oldValue) => console.log(newValue, oldValue),
+        {
+          // immediate: true,
+          flush: "pre",
+        }
+      );
       // console.log(sum.value);
       // obj.text++;
       // console.log("结束了");
       // setTimeout(() => {
-      //   obj.text = "22222";
+      //   obj.text = 1;
       // }, 1000);
     </script>
   </body>
