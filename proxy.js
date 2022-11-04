@@ -2,12 +2,17 @@
  * @Author: zhanggd
  * @Date: 2022-10-18 13:48:57
  * @LastEditors: zhanggd
- * @LastEditTime: 2022-10-28 15:41:50
+ * @LastEditTime: 2022-10-31 10:50:47
  * @Description: 响应式数据获取与设置
  */
 function createReactive(data, isShallow = false, isReadonly = false) {
   return new Proxy(data, {
     get(target, key, receiver) {
+      // debugger;
+      if (key === "size") {
+        track(target, ITERATE_KEY);
+        return Reflect.get(target, key, target);
+      }
       if (key === "raw") {
         return target;
       }
@@ -22,7 +27,7 @@ function createReactive(data, isShallow = false, isReadonly = false) {
       if (typeof res === "Object" && res !== null) {
         return isReadonly ? readonly(res) : reactive(res);
       }
-      return res;
+      return mutableInstrumentations[key];
     },
     set(target, key, newVal, receiver) {
       if (isReadonly) {

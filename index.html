@@ -2,7 +2,7 @@
  * @Author: zhanggd
  * @Date: 2022-10-12 10:10:05
  * @LastEditors: zhanggd
- * @LastEditTime: 2022-10-28 15:44:26
+ * @LastEditTime: 2022-11-04 13:14:20
  * @Description: vuejs设计与实现 代码
 -->
 <!DOCTYPE html>
@@ -16,11 +16,14 @@
 
   <body>
     <div id="app"></div>
+    <script type="text/javascript" src="/costumMethod.js"></script>
     <script type="text/javascript" src="/proxy.js"></script>
     <script type="text/javascript" src="/effect.js"></script>
     <script type="text/javascript" src="/quene.js"></script>
     <script type="text/javascript" src="/computed.js"></script>
     <script type="text/javascript" src="/watch.js"></script>
+    <script type="text/javascript" src="/refs.js"></script>
+    <script type="text/javascript" src="/renderer.js"></script>
     <script>
       // 响应式数据实现
       const bucket = new WeakMap(); // 防止内存泄漏
@@ -35,23 +38,17 @@
         },
       };
       const arr = {};
-      const obj = reactive([arr]);
+      const obj = reactive(data);
+      const myref = ref(1);
+      let count = 1;
       // const obj = readonly(data);
       // const sum = computed(() => obj.text + obj.text2);
 
       // 拿到副作用函数
       const effectFn = effect(
         () => {
-          // document.body.innerText = obj.text;
-          // console.log(obj.text.foo);
-          // for (const key of obj) {
-          //   console.log(key);
-          // }
-          // console.log(obj[0]);
+          renderer(`<h1>${count}</h1>`, document.getElementById("app"));
         },
-        // obj.text + obj.text2,
-        // obj.text++,
-
         {
           scheduler(fn) {
             // jobQuene.add(fn);
@@ -61,11 +58,6 @@
           // lazy: true,
         }
       );
-      // obj[1] = "123";
-      console.log(obj.includes(arr));
-      obj.length = 0;
-      // effectFn();
-      // console.log(effectFn()); // 手动执行
       watch(
         () => obj.text,
         (newValue, oldValue) => console.log(newValue, oldValue),
@@ -74,12 +66,9 @@
           flush: "pre",
         }
       );
-      // console.log(sum.value);
-      // obj.text++;
-      // console.log("结束了");
-      // setTimeout(() => {
-      //   obj.text = 1;
-      // }, 1000);
+      setTimeout(() => {
+        count = 100;
+      }, 1000);
     </script>
   </body>
 </html>
